@@ -3,9 +3,6 @@ import { GameSettings, DEFAULT_SETTINGS } from '../types';
 
 interface Props {
   onPlay: (settings: GameSettings) => void;
-  players: { id?: string; name: string; avatar: string; isHost?: boolean }[];
-  profileName: string;
-  profileAvatar: string;
   onOpenSettings: () => void;
 }
 
@@ -29,9 +26,6 @@ const FLOAT_TILES = [
 
 const LobbyScreen: React.FC<Props> = ({
   onPlay,
-  players,
-  profileName,
-  profileAvatar,
   onOpenSettings,
 }) => {
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
@@ -69,25 +63,7 @@ const LobbyScreen: React.FC<Props> = ({
         </button>
       </div>
 
-      <div className="profile-badge">
-        <span className="profile-avatar-sm">{profileAvatar}</span>
-        <span className="profile-name-sm">{profileName}</span>
-      </div>
-
       {/* QR code section removed — QR is shown on the display screen */}
-
-      <div className="players-section">
-        <h3>👥 Party</h3>
-        <ul className="player-list">
-          {players.map((p, i) => (
-            <li key={p.id ?? i} className="player-item">
-              <span>{p.avatar}</span>
-              <span>{p.name}</span>
-              {p.isHost && <span className="host-badge">host</span>}
-            </li>
-          ))}
-        </ul>
-      </div>
 
       <div className="game-settings-panel">
         <div className="gsp-row">
@@ -107,13 +83,13 @@ const LobbyScreen: React.FC<Props> = ({
         <div className="gsp-row">
           <span className="gsp-label">Time</span>
           <div className="gsp-pills">
-            {([30, 60, 90, 120, 180] as const).map((s) => (
+            {([30, 60, 90, 120] as const).map((s) => (
               <button
                 key={s}
                 className={`gsp-pill${settings.duration === s ? ' active' : ''}`}
                 onClick={() => set('duration', s)}
               >
-                {s === 30 ? '30 s' : s === 60 ? '1 min' : s === 90 ? '1½ min' : s === 120 ? '2 min' : '3 min'}
+                {s === 30 ? '30 s' : s === 60 ? '1 min' : s === 90 ? '1½ min' : '2 min'}
               </button>
             ))}
           </div>
@@ -136,13 +112,10 @@ const LobbyScreen: React.FC<Props> = ({
 
       <div className="lobby-buttons">
         <button className="btn-primary big-btn" onClick={() => onPlay(settings)}>
-          ▶ Play{players.length > 1 ? ' with Friends' : ''}
+          Play
         </button>
       </div>
 
-      <p className="lobby-footer">
-        Players join from the display screen QR code.
-      </p>
     </div>
   );
 };

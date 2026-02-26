@@ -284,18 +284,21 @@ html, body, #root {
 }
 
 .lobby-header {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: center;
   width: 100%;
   margin-bottom: 10px;
+  position: relative;
+}
+.lobby-header .settings-btn {
+  position: absolute;
+  right: 0;
 }
 .game-title { font-size: 32px; font-weight: 900; color: var(--blue-dark); letter-spacing: -.5px; }
 
 .settings-btn {
   background: none; border: none; font-size: 26px; cursor: pointer;
-  padding: 6px; border-radius: 50%;
-  transition: background .15s;
+  padding: 6px;
 }
-.settings-btn:hover { background: rgba(58,135,212,.12); }
 
 .profile-badge {
   display: flex; align-items: center; gap: 8px;
@@ -423,19 +426,15 @@ html, body, #root {
 /* Player list re-added for lobby party section */
 .players-section {
   width: 100%;
-  background: var(--surface);
-  border-radius: var(--radius);
-  padding: 14px 18px;
-  box-shadow: var(--shadow);
   position: relative;
   z-index: 1;
   margin-bottom: 4px;
 }
 .players-section h3 { margin-bottom: 10px; font-size: 15px; color: var(--blue-dark); font-weight: 700; }
-.player-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.player-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
 .player-item {
   display: flex; align-items: center; gap: 10px;
-  padding: 5px 4px;
+  padding: 4px 2px;
   font-weight: 600;
   font-size: 15px;
 }
@@ -813,10 +812,10 @@ html, body, #root {
     border-color 0.1s ease;
 }
 .go-cell.lit {
-  background: linear-gradient(135deg, #f5d060, #e8b840);
-  border-color: #c89020;
-  color: #3d2b0a;
-  box-shadow: 0 0 7px rgba(240,192,80,.4);
+  background: linear-gradient(135deg, #81c784, #4caf50);
+  border-color: #388e3c;
+  color: #fff;
+  box-shadow: 0 0 7px rgba(76,175,80,.4);
 }
 .go-cell.current {
   transform: scale(1.22);
@@ -833,7 +832,7 @@ html, body, #root {
   gap: 8px;
   justify-content: center;
   flex-wrap: wrap;
-  margin-top: 8px;
+  margin-top: 22px;
   margin-bottom: 8px;
   width: 100%;
 }
@@ -877,6 +876,122 @@ html, body, #root {
   color: var(--blue-dark);
   font-weight: 800;
   transition: color 0.2s;
+}
+
+/* ── Display (TV) override — full-bleed, large grid, wide word panel ── */
+.go-screen--display {
+  padding: 20px 32px 32px;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+.go-screen--display .go-header {
+  margin-bottom: 12px;
+}
+.go-screen--display .go-winner-banner {
+  font-size: 22px;
+}
+.go-screen--display .go-body {
+  align-items: stretch;
+  justify-content: center;
+  gap: 4vw;
+  height: calc(100vh - 100px);
+  flex: 1;
+}
+.go-screen--display .go-left-col {
+  flex-shrink: 0;
+  width: min(48vh, 480px);
+  justify-content: flex-start;
+  align-items: center;  /* centre the grid + word-label within the column */
+}
+.go-screen--display .go-grid-wrap {
+  width: 100%;
+}
+.go-screen--display .go-grid {
+  gap: clamp(5px, 1vmin, 10px);
+}
+.go-screen--display .go-cell {
+  font-size: clamp(18px, 5vmin, 44px);
+  border-radius: 10px;
+  border-width: 3px;
+}
+.go-screen--display .go-word-label-area {
+  height: 52px;
+  margin-bottom: 10px;
+}
+.go-screen--display .go-word-label {
+  font-size: clamp(22px, 4vw, 40px);
+  letter-spacing: 4px;
+}
+.go-screen--display .go-word-label-done {
+  font-size: clamp(20px, 3.5vw, 34px);
+}
+.go-screen--display .go-players-row {
+  gap: 20px;
+  margin-top: 24px;
+}
+.go-screen--display .go-player-avatar {
+  font-size: clamp(52px, 9vh, 80px);
+}
+.go-screen--display .go-player-name {
+  font-size: 20px;
+  max-width: 130px;
+}
+.go-screen--display .go-player-score {
+  font-size: 22px;
+  font-weight: 900;
+}
+.go-screen--display .go-crown {
+  font-size: 20px;
+  top: -22px;
+}
+.go-screen--display .go-buttons {
+  flex-direction: row;
+  gap: 12px;
+  margin-top: 20px;
+}
+.go-screen--display .go-skip-btn {
+  font-size: 15px;
+  padding: 8px 22px;
+  margin-top: 14px;
+}
+/* Right word panel — fills remaining width, multi-column on big screens */
+.go-screen--display .go-right-col {
+  flex: 1;
+  width: auto;
+  max-height: calc(100vh - 100px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.go-screen--display .go-wordlist-title {
+  font-size: 15px;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+.go-screen--display .go-wordlist-scroll {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-content: start;
+  gap: 6px;
+}
+.go-screen--display .go-word-row {
+  padding: 8px 12px;
+  border-radius: 9px;
+  border-left-width: 4px;
+}
+.go-screen--display .go-word-text {
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+.go-screen--display .go-word-pts {
+  font-size: 13px;
+}
+.go-screen--display .go-word-who {
+  font-size: 12px;
+  max-width: 80px;
 }
 
 /* Skip / buttons */
@@ -988,6 +1103,22 @@ html, body, #root {
   78%  { transform: translateY(-14px) scale(1.09); }
   100% { transform: translateY(0)    scale(1); }
 }
+@keyframes cellShake {
+  0%   { transform: translateX(0); }
+  18%  { transform: translateX(-5px) rotate(-3deg); }
+  36%  { transform: translateX(5px)  rotate(3deg); }
+  54%  { transform: translateX(-4px) rotate(-2deg); }
+  72%  { transform: translateX(4px)  rotate(2deg); }
+  88%  { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
+.cell-shake {
+  animation: cellShake 0.38s ease both !important;
+  background: linear-gradient(135deg, #ef9a9a, #e53935) !important;
+  border-color: #c62828 !important;
+  box-shadow: 0 0 8px rgba(229,57,53,.45) !important;
+}
+.cell-shake .cell-letter { color: #fff !important; }
 
 
 
@@ -1151,12 +1282,13 @@ html, body, #root {
 }
 .display-lobby-body {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   justify-content: center;
-  gap: 5vh;
+  gap: 6vw;
   flex-wrap: wrap;
   width: 100%;
-  max-width: 900px;
+  max-width: 1100px;
 }
 .display-qr-block {
   display: flex;
@@ -1165,7 +1297,7 @@ html, body, #root {
   gap: 20px;
 }
 .display-qr-label {
-  font-size: clamp(20px, 3vw, 30px);
+  font-size: clamp(22px, 3vw, 34px);
   font-weight: 700;
   color: var(--blue-dark);
   margin: 0;
@@ -1179,12 +1311,12 @@ html, body, #root {
 .display-players-block {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-width: 200px;
-  align-items: center;
+  gap: 16px;
+  min-width: 240px;
+  align-items: flex-start;
 }
 .display-players-heading {
-  font-size: clamp(20px, 3vw, 32px);
+  font-size: clamp(24px, 3.5vw, 42px);
   font-weight: 800;
   color: var(--blue-dark);
   margin: 0;
@@ -1195,19 +1327,16 @@ html, body, #root {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
 }
 .display-player-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 10px 16px;
+  gap: 14px;
 }
-.display-player-avatar { font-size: 30px; }
-.display-player-name   { font-size: clamp(16px, 2.2vw, 22px); font-weight: 700; color: var(--text); }
-.display-host-badge    { font-size: 11px; background: var(--blue); color: #fff; border-radius: 20px; padding: 2px 8px; font-weight: 700; }
+.display-player-avatar { font-size: clamp(36px, 5vw, 52px); }
+.display-player-name   { font-size: clamp(20px, 2.8vw, 32px); font-weight: 700; color: var(--text); }
+.display-host-badge    { font-size: 13px; background: var(--blue); color: #fff; border-radius: 20px; padding: 3px 12px; font-weight: 700; }
 .display-waiting-hint  { font-size: clamp(13px, 1.8vw, 17px); color: var(--text-soft); margin: 4px 0 0; }
 
 /* ── Display Game ── */
@@ -1332,7 +1461,25 @@ html, body, #root {
   gap: 16px;
   overflow-y: auto;
 }
-.phone-go-header { text-align: center; }
+.phone-go-header { text-align: center; position: relative; width: 100%; max-width: 360px; }
+/* Words count toggle button — top-right corner of the header */
+.phone-go-words-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1.5px solid var(--blue);
+  color: var(--blue-dark);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 50px;
+  cursor: pointer;
+  line-height: 1.2;
+}
+.phone-go-words-btn:active { opacity: 0.7; }
+.phone-go-words-btn-total  { opacity: 0.55; }
+.phone-go-words-empty { font-size: 13px; color: var(--text-soft); text-align: center; padding: 8px 0; }
 .phone-go-winner  { font-size: 20px; font-weight: 800; color: #2e7d32; margin: 4px 0 0; }
 .phone-go-subtitle { font-size: 16px; color: var(--text-soft); margin: 4px 0 0; }
 .phone-go-score-card {
@@ -1374,4 +1521,15 @@ html, body, #root {
   width: 100%;
   max-width: 300px;
   margin-top: auto;
+}
+.phone-go-wait {
+  font-size: 13px;
+  color: var(--text-soft);
+  text-align: center;
+  letter-spacing: .5px;
+  animation: waitPulse 1.4s ease-in-out infinite;
+}
+@keyframes waitPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
 }

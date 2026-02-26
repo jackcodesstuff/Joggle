@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FoundWord, PlayerResult } from '../types';
 
 interface Props {
@@ -9,15 +9,21 @@ interface Props {
   isHost?: boolean;
   onPlayAgain: () => void;
   onBackToLobby: () => void;
-  onGoHome: () => void;
 }
 
 const PhoneGameOver: React.FC<Props> = ({
-  score, words, allResults, currentPlayerId, isHost, onPlayAgain, onBackToLobby, onGoHome,
+  score, words, allResults, currentPlayerId, isHost, onPlayAgain, onBackToLobby,
 }) => {
   const sorted = [...allResults].sort((a, b) => b.score - a.score);
   const isWinner = allResults.length > 1 && sorted[0]?.id === currentPlayerId;
   const sortedWords = [...words].sort((a, b) => b.score - a.score);
+
+  // Buttons are locked for 6 s so everyone can watch the display go-screen animation
+  const [unlocked, setUnlocked] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setUnlocked(true), 6000);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <div className="phone-gameover">
@@ -52,10 +58,10 @@ const PhoneGameOver: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Words found */}
-      {sortedWords.length > 0 && (
-        <div className="phone-go-words">
-          <h3 className="phone-go-words-title">Your Words</h3>
+      {/* Words list — always visible below the score */}
+      <div className="phone-go-words">
+        <h3 className="phone-go-words-title">Your Words · {words.length} found</h3>
+        {sortedWords.length > 0 ? (
           <div className="phone-go-words-list">
             {sortedWords.map((w) => (
               <span key={w.word} className="found-word-chip">
@@ -63,15 +69,22 @@ const PhoneGameOver: React.FC<Props> = ({
               </span>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="phone-go-words-empty">No words found this round 😅</p>
+        )}
+      </div>
 
       <div className="phone-go-buttons">
-        {isHost && (
-          <button className="btn-primary" onClick={onPlayAgain}>Play Again</button>
+        {!unlocked ? (
+          <p className="phone-go-wait">Watch the board…</p>
+        ) : (
+          <>
+            {isHost && (
+              <button className="btn-primary" onClick={onPlayAgain}>Play Again</button>
+            )}
+            <button className={isHost ? 'btn-secondary' : 'btn-primary'} onClick={onBackToLobby}>Back to Lobby</button>
+          </>
         )}
-        <button className={isHost ? 'btn-secondary' : 'btn-primary'} onClick={onBackToLobby}>Back to Lobby</button>
-        <button className="btn-secondary" onClick={onGoHome}>Home</button>
       </div>
     </div>
   );

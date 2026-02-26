@@ -37,33 +37,73 @@ app.get('/api/network-ip', (req, res) => {
 // Serve the built React app
 app.use(express.static(path.join(__dirname, '../build')));
 
-// rooms: Map<roomId, { players, displaySocketId, seed, settings, gameActive, results }>
+// rooms: Map<roomId, { players, activePlayers, displaySocketId, seed, settings, gameActive, results }>
 const rooms = new Map();
 
 function getOrCreateRoom(roomId) {
   if (!rooms.has(roomId)) {
-    rooms.set(roomId, { players: [], displaySocketId: null, seed: null, settings: null, gameActive: false, results: {} });
+    rooms.set(roomId, {
+      players: [], activePlayers: new Set(),
+      displaySocketId: null, seed: null, settings: null,
+      gameActive: false, results: {},
+    });
   }
   return rooms.get(roomId);
 }
 
 function leaveRoom(socket) {
   for (const [roomId, room] of rooms) {
-    // If display disconnects, remove room entirely (game is over for everyone)
+    // If display disconnects, clear its slot but keep the room
     if (room.displaySocketId === socket.id) {
       room.displaySocketId = null;
-      // Don't delete room — players might still be connected
       continue;
     }
     const idx = room.players.findIndex((p) => p.socketId === socket.id);
     if (idx === -1) continue;
+    const leavingId = room.players[idx].id;
+    const wasHost   = room.players[idx].isHost === true;
     room.players.splice(idx, 1);
-    socket.leave(roomId);
-    // If no players left and no display, clean up
-    if (room.players.length === 0 && !room.displaySocketId) {
-      rooms.delete(roomId);
+
+    if (room.gameActive) {
+      room.activePlayers.delete(leavingId);
     } else {
+      socket.leave(roomId);
+    }
+
+    if (room.players.length === 0 && !room.displaySocketId && !room.gameActive) {
+      rooms.delete(roomId);
+      continue;
+    }
+
+    // Host left: promote next player, reset game state, return everyone to lobby
+    if (wasHost && room.players.length > 0) {
+      room.players[0].isHost = true;
+      const newHostSocketId = room.players[0].socketId;
+      const newHostSocket   = io.sockets.sockets.get(newHostSocketId);
+      room.gameActive    = false;
+      room.activePlayers = new Set();
+      room.seed          = null;
+      room.settings      = null;
+      room.results       = {};
+      if (newHostSocket) newHostSocket.emit('you-are-host');
+      io.to(roomId).except(newHostSocketId).emit('return-to-lobby');
       io.to(roomId).emit('room-update', room.players);
+      continue;
+    }
+
+    // Normal (non-host) player left
+    io.to(roomId).emit('room-update', room.players);
+
+    if (room.gameActive) {
+      if (room.activePlayers.size === 0) {
+        room.gameActive = false;
+        room.activePlayers = new Set();
+        io.to(roomId).emit('return-to-lobby');
+      } else if (Object.keys(room.results).length >= room.activePlayers.size) {
+        room.gameActive = false;
+        room.activePlayers = new Set();
+        io.to(roomId).emit('all-results', Object.values(room.results));
+      }
     }
   }
 }
@@ -89,10 +129,13 @@ io.on('connection', (socket) => {
       return;
     }
     const room = rooms.get(roomId);
-    socket.join(roomId);
+
+    // Only join the socket.io room if not already subscribed.
+    // Players who backed out of a game stay subscribed so they receive game-started.
+    const alreadySubscribed = socket.rooms.has(roomId);
+    if (!alreadySubscribed) socket.join(roomId);
 
     // Replace stale entry for same profile id OR same socket (profile switch).
-    // Capture whether this socket was previously the host so we can keep that status.
     const bySocket = room.players.findIndex((p) => p.socketId === socket.id);
     const wasHost  = bySocket >= 0 ? room.players[bySocket].isHost : false;
     if (bySocket >= 0) room.players.splice(bySocket, 1);
@@ -109,8 +152,9 @@ io.on('connection', (socket) => {
 
     io.to(roomId).emit('room-update', room.players);
 
-    // Late joiner: if game is in progress, send them current game state
-    if (room.gameActive && room.seed) {
+    // Only send game-in-progress to genuine new joiners, not players returning to lobby
+    // after pressing back (they stayed subscribed but weren’t in activePlayers).
+    if (room.gameActive && room.seed && !alreadySubscribed) {
       socket.emit('game-in-progress', { seed: room.seed, settings: room.settings });
     }
   });
@@ -123,17 +167,21 @@ io.on('connection', (socket) => {
     room.settings = settings;
     room.gameActive = true;
     room.results = {};
+    // Snapshot which players are actively playing so back-outs don’t block results
+    room.activePlayers = new Set(room.players.map(p => p.id));
     io.to(roomId).emit('game-started', { seed, settings });
   });
 
   // Player submits their end-of-game results
   socket.on('submit-results', ({ roomId, result }) => {
     const room = rooms.get(roomId);
-    if (!room) return;
+    if (!room || !room.gameActive) return;  // ignore stale submits after host-left reset
     room.results[result.id] = result;
-    // Broadcast all-results when every current player has submitted
-    if (Object.keys(room.results).length >= room.players.length) {
+    // Compare against activePlayers (snapshot at game-start) so back-outs don’t block
+    const activeCount = room.activePlayers.size || room.players.length;
+    if (Object.keys(room.results).length >= activeCount) {
       room.gameActive = false;
+      room.activePlayers = new Set();
       io.to(roomId).emit('all-results', Object.values(room.results));
     }
   });

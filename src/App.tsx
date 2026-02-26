@@ -31,7 +31,16 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [isHostPlayer, setIsHostPlayer] = useState(false);
 
-  const [roomId] = useState(() => joinRoomId ?? uuidv4());
+  // Display roomId is persisted in localStorage so a page refresh on the monitor
+  // reconnects to the same room instead of generating a new orphaned room.
+  const [roomId] = useState(() => {
+    if (joinRoomId) return joinRoomId;  // phone player — use the param from URL
+    const stored = localStorage.getItem('joggle-display-room');
+    if (stored) return stored;
+    const fresh = uuidv4();
+    localStorage.setItem('joggle-display-room', fresh);
+    return fresh;
+  });
 
   const [gameSeed, setGameSeed]         = useState(() => Math.floor(Math.random() * 0xffffffff));
   const [gameSettings, setGameSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
@@ -44,6 +53,9 @@ function App() {
   const [waitingForResults, setWaitingForResults] = useState(false);
   const waitingTimerRef = React.useRef<NodeJS.Timeout | null>(null);
   const [loading, setLoading] = useState(true);
+  // When the user intentionally backs out of a game, suppress ghost socket events
+  // (game-in-progress re-forcing them back, all-results navigating to gameover)
+  const leftGameEarlyRef = React.useRef(false);
 
   useEffect(() => {
     if (isDisplayMode) { setLoading(false); return; }
@@ -71,6 +83,7 @@ function App() {
     });
 
     s.on('game-started', ({ seed, settings }: { seed: number; settings: GameSettings }) => {
+      leftGameEarlyRef.current = false; // new game starting — clear the early-exit flag
       setGameSeed(seed);
       setGameSettings(settings);
       setAllResults([]);
@@ -85,6 +98,7 @@ function App() {
     });
 
     s.on('game-in-progress', ({ seed, settings }: { seed: number; settings: GameSettings }) => {
+      if (leftGameEarlyRef.current) return; // intentionally left — ignore
       setGameSeed(seed);
       setGameSettings(settings);
       setView('game');
@@ -98,13 +112,17 @@ function App() {
       setAllResults(results);
       setWaitingForResults(false);
       if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current);
+      if (leftGameEarlyRef.current) return; // intentionally left — don't navigate to gameover
       setView((v) => v.startsWith('display') ? 'display-gameover' : 'phone-gameover');
     });
 
     s.on('return-to-lobby', () => {
-      // Display: go to display-lobby; phone non-hosts: go to player-lobby waiting screen
+      // Display: go to display-lobby.
+      // Non-host phones: go to player-lobby waiting screen.
+      // Host phones: already navigated to host-lobby in handleBackToLobby — don't override.
       setView((v) => {
         if (v.startsWith('display')) return 'display-lobby';
+        if (v === 'host-lobby') return 'host-lobby';  // don't override host's own navigation
         return 'player-lobby';
       });
     });
@@ -240,7 +258,6 @@ function App() {
             currentPlayerId="display"
             joinUrl={joinUrl}
             onPlayAgain={handlePlayAgain}
-            onGoHome={handlePlayAgain}
           />
         )}
       </div>
@@ -254,19 +271,12 @@ function App() {
         <JoinScreen
           roomCode={roomId.slice(0, 6)}
           onJoin={handleJoinDone}
-          onGoHome={() => {
-            window.history.replaceState({}, '', window.location.pathname);
-            setView('join');
-          }}
         />
       )}
 
       {view === 'host-lobby' && profile && (
         <LobbyScreen
           onPlay={handlePlay}
-          players={roomPlayers.length > 0 ? roomPlayers : [{ id: profile.id, name: profile.name, avatar: profile.avatar }]}
-          profileName={profile.name}
-          profileAvatar={profile.avatar}
           onOpenSettings={() => setShowSettings(true)}
         />
       )}
@@ -293,8 +303,13 @@ function App() {
           settings={gameSettings}
           profile={profile}
           roomId={roomId}
+          isHost={isHostPlayer}
           onGameOver={handleGameOver}
-          onBack={() => setView(isHostPlayer ? 'host-lobby' : 'player-lobby')}
+          onBack={() => {
+            leftGameEarlyRef.current = true;
+            getSocket().emit('leave-room');
+            setView(isHostPlayer ? 'host-lobby' : 'player-lobby');
+          }}
         />
       )}
 
@@ -321,7 +336,6 @@ function App() {
           isHost={isHostPlayer}
           onPlayAgain={handlePlayAgain}
           onBackToLobby={handleBackToLobby}
-          onGoHome={() => setView('join')}
         />
       )}
 

@@ -6,10 +6,9 @@ import CreateProfile from './CreateProfile';
 interface Props {
   roomCode: string;       // first 6 chars of roomId
   onJoin: (profile: Profile) => void;
-  onGoHome: () => void;
 }
 
-const JoinScreen: React.FC<Props> = ({ roomCode, onJoin, onGoHome }) => {
+const JoinScreen: React.FC<Props> = ({ roomCode, onJoin }) => {
   const profiles = getProfiles();
   const [showCreate, setShowCreate] = useState(profiles.length === 0);
   const [showSwitcher, setShowSwitcher] = useState(false);
@@ -49,8 +48,6 @@ const JoinScreen: React.FC<Props> = ({ roomCode, onJoin, onGoHome }) => {
       <div className="join-card">
         <h1 className="game-title">Joggle</h1>
         <p className="join-subtitle">You've been invited to play!</p>
-
-        <div className="room-pill">Room: {roomCode.toUpperCase()}</div>
 
         {selectedProfile && !showSwitcher && (
           <>
@@ -105,14 +102,6 @@ const JoinScreen: React.FC<Props> = ({ roomCode, onJoin, onGoHome }) => {
             </button>
           </div>
         )}
-
-        <button
-          className="btn-secondary"
-          style={{ marginTop: 18, width: '100%' }}
-          onClick={onGoHome}
-        >
-          🏠 Go to My Lobby Instead
-        </button>
       </div>
     </div>
   );

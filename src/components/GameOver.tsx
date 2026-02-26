@@ -12,14 +12,14 @@ interface Props {
   currentPlayerId: string;
   joinUrl?: string;  // when provided (display mode), shows corner QR for next game
   onPlayAgain: () => void;
-  onGoHome: () => void;
 }
 
 type WordEntry = { word: string; path: number[]; score: number; foundBy: string[] };
 
 const GameOver: React.FC<Props> = ({
-  seed, boardSize, allResults, currentPlayerId, joinUrl, onPlayAgain, onGoHome,
+  seed, boardSize, allResults, currentPlayerId, joinUrl, onPlayAgain,
 }) => {
+  const isDisplay = !!joinUrl;  // display (TV) mode when joinUrl is provided
   const board = useMemo(() => generateBoard(seed, boardSize), [seed, boardSize]);
 
   const allWordEntries = useMemo<WordEntry[]>(() => {
@@ -123,7 +123,7 @@ const GameOver: React.FC<Props> = ({
   };
 
   return (
-    <div className="go-screen">
+    <div className={`go-screen${isDisplay ? ' go-screen--display' : ''}`}>
       {/* Corner QR for display screens */}
       {joinUrl && (
         <div className="go-corner-qr">
@@ -192,42 +192,10 @@ const GameOver: React.FC<Props> = ({
             ))}
           </div>
 
-          {/* Controls */}
-          {!animDone ? (
-            <button className="go-skip-btn" onClick={handleSkip}>Skip›</button>
-          ) : (
-            <div className="go-buttons">
-              <button className="btn-primary"   onClick={onPlayAgain}>Play Again</button>
-              <button className="btn-secondary" onClick={onGoHome}>Home</button>
-            </div>
+          {/* Skip button — display only, shown during animation */}
+          {!animDone && (
+            <button className="go-skip-btn" onClick={handleSkip}>Skip</button>
           )}
-        </div>
-
-        {/* Right: word panel */}
-        <div className="go-right-col">
-          <h3 className="go-wordlist-title">Words</h3>
-          <div className="go-wordlist-scroll">
-            {panelWords.map(entry => {
-              const isShared = entry.foundBy.length > 1;
-              const names   = entry.foundBy.map(id => allResults.find(r => r.id === id)?.name ?? id);
-              const avatars = entry.foundBy.map(id => allResults.find(r => r.id === id)?.avatar ?? '');
-              return (
-                <div key={entry.word} className={`go-word-row ${isShared ? 'shared' : 'unique'}`}>
-                  <span className="go-word-text">{entry.word}</span>
-                  <span className="go-word-pts">+{entry.score}</span>
-                  <span className="go-word-who">
-                    {isShared ? `🤝 ${names.join(' & ')}` : `${avatars[0]} ${names[0]}`}
-                  </span>
-                </div>
-              );
-            })}
-            {panelWords.length === 0 && !animDone && (
-              <p className="go-wordlist-empty">…</p>
-            )}
-            {panelWords.length === 0 && animDone && (
-              <p className="go-no-words">No words found!</p>
-            )}
-          </div>
         </div>
 
       </div>

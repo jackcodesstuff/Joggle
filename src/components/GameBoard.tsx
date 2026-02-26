@@ -6,6 +6,7 @@ interface Props {
   selectedPath: number[];
   foundWordPaths: number[][];
   dupeFlashPath?: number[];
+  shakeFlashPath?: number[];
   onPathChange: (path: number[]) => void;
   onWordSubmit: (path: number[]) => void;
   disabled: boolean;
@@ -17,6 +18,7 @@ const GameBoard: React.FC<Props> = ({
   selectedPath,
   foundWordPaths,
   dupeFlashPath = [],
+  shakeFlashPath = [],
   onPathChange,
   onWordSubmit,
   disabled,
@@ -34,6 +36,7 @@ const GameBoard: React.FC<Props> = ({
 
   const selectedSet = new Set(selectedPath);
   const dupeSet = new Set(dupeFlashPath);
+  const shakeSet = new Set(shakeFlashPath);
 
   const canExtendTo = (idx: number, currentPath: number[]): boolean => {
     if (currentPath.includes(idx)) return false;
@@ -207,14 +210,16 @@ const GameBoard: React.FC<Props> = ({
 
   const getCellClass = (idx: number): string => {
     let cls = 'cell';
-    if (foundCellIndices.has(idx)) {
+    if (shakeSet.has(idx)) {
+      cls += ' cell-shake';
+    } else if (foundCellIndices.has(idx)) {
       cls += ' cell-found';
     } else if (dupeSet.has(idx)) {
       cls += ' cell-dupe';
     } else if (selectedSet.has(idx)) {
       cls += ' cell-selected';
     }
-    if (selectedPath.length > 0 && selectedPath[selectedPath.length - 1] === idx) {
+    if (selectedPath.length > 0 && selectedPath[selectedPath.length - 1] === idx && !shakeSet.has(idx)) {
       cls += ' cell-last';
     }
     return cls;

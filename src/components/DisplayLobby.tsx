@@ -19,7 +19,7 @@ const DisplayLobby: React.FC<Props> = ({ joinUrl, players }) => (
         <div className="display-qr-box">
           <QRCodeSVG
             value={joinUrl}
-            size={260}
+            size={320}
             bgColor="#f0f8ff"
             fgColor="#0d2748"
             level="H"

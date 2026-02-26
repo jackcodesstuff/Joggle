@@ -12,12 +12,13 @@ interface Props {
   settings?: GameSettings;
   profile: Profile;
   roomId: string;
+  isHost?: boolean;
   onGameOver: (score: number, words: FoundWord[]) => void;
   onBack: () => void;
   multiplayerMode?: boolean;
 }
 
-const GameScreen: React.FC<Props> = ({ seed, settings = DEFAULT_SETTINGS, profile, roomId, onGameOver, onBack, multiplayerMode = false }) => {
+const GameScreen: React.FC<Props> = ({ seed, settings = DEFAULT_SETTINGS, profile, roomId, isHost = false, onGameOver, onBack, multiplayerMode = false }) => {
   const { boardSize, duration, minWordLength } = settings;
   const [board] = useState(() => generateBoard(seed, boardSize));
   const [selectedPath, setSelectedPath] = useState<number[]>([]);
@@ -30,10 +31,12 @@ const GameScreen: React.FC<Props> = ({ seed, settings = DEFAULT_SETTINGS, profil
   const [currentWord, setCurrentWord] = useState('');
   const [flashPath, setFlashPath] = useState<number[]>([]);
   const [dupePath, setDupePath] = useState<number[]>([]);
+  const [shakePath, setShakePath] = useState<number[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const flashRef = useRef<NodeJS.Timeout | null>(null);
   const flashPathRef = useRef<NodeJS.Timeout | null>(null);
   const dupePathRef = useRef<NodeJS.Timeout | null>(null);
+  const shakePathRef = useRef<NodeJS.Timeout | null>(null);
   const flashKeyRef = useRef(0);
   const gameOverCalledRef = useRef(false);
 
@@ -117,6 +120,11 @@ const GameScreen: React.FC<Props> = ({ seed, settings = DEFAULT_SETTINGS, profil
       setFlashPath(path);
       if (flashPathRef.current) clearTimeout(flashPathRef.current);
       flashPathRef.current = setTimeout(() => setFlashPath([]), 600);
+    } else {
+      // Shake all tiles of the invalid word
+      setShakePath(path);
+      if (shakePathRef.current) clearTimeout(shakePathRef.current);
+      shakePathRef.current = setTimeout(() => setShakePath([]), 420);
     }
     // invalid words: no popup — just silently clear selection
     setSelectedPath([]);
@@ -140,7 +148,9 @@ const GameScreen: React.FC<Props> = ({ seed, settings = DEFAULT_SETTINGS, profil
   return (
     <div className="game-screen">
       <div className="game-header">
-        <button className="back-btn" onClick={onBack} aria-label="Back">‹</button>
+        {isHost && (
+          <button className="back-btn" onClick={onBack} aria-label="Back">‹</button>
+        )}
         <div className="score-display">
           <span className="score-label">Score</span>
           <span className="score-value">{score}</span>
@@ -148,10 +158,6 @@ const GameScreen: React.FC<Props> = ({ seed, settings = DEFAULT_SETTINGS, profil
         <div className={`timer-display${urgentTimer ? ' timer-urgent' : ''}`}>
           <span className="timer-label">Time</span>
           <span className="timer-value">{formatTime(timeLeft)}</span>
-        </div>
-        <div className="profile-chip">
-          <span>{profile.avatar}</span>
-          <span>{profile.name}</span>
         </div>
       </div>
 
@@ -170,6 +176,7 @@ const GameScreen: React.FC<Props> = ({ seed, settings = DEFAULT_SETTINGS, profil
         selectedPath={selectedPath}
         foundWordPaths={flashPath.length > 0 ? [flashPath] : []}
         dupeFlashPath={dupePath}
+        shakeFlashPath={shakePath}
         onPathChange={setSelectedPath}
         onWordSubmit={handleWordSubmit}
         disabled={gameOver}
@@ -177,7 +184,7 @@ const GameScreen: React.FC<Props> = ({ seed, settings = DEFAULT_SETTINGS, profil
       />
 
       <div className="found-words-section">
-        <h3>Found Words ({foundWords.length})</h3>
+        <h3>Found Words</h3>
         <div className="found-words-list">
           {sortedFound.map((fw, i) => (
             <span key={i} className="found-word-chip">
